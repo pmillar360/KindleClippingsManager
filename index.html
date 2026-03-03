@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KCM — Kindle Clippings Manager</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <header class="header">
+      <button class="btn btn-primary" @click="openFile">Open File</button>
+      <div class="header-title">
+        KCM — Kindle Clippings Manager
+        <span v-if="fileName">{{ fileName }}</span>
+        <span class="dirty-dot" v-if="isDirty" title="Unsaved changes"></span>
+      </div>
+      <button class="btn" @click="downloadFile" v-if="books.length">Download updated clippings file</button>
+    </header>
+
+    <!-- Empty state: no file loaded -->
+    <div class="empty-state" v-if="!books.length">
+      <h3>No file loaded</h3>
+      <p>Open your Kindle's <strong>My Clippings.txt</strong> file to browse, search, edit, and manage your highlights and bookmarks.</p>
+      <button class="btn btn-primary" @click="openFile">Open File</button>
+    </div>
+
+    <!-- Main content -->
+    <div class="main" v-if="books.length">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div class="sidebar-controls">
+          <div class="search-row">
+            <input
+              class="search-input"
+              type="text"
+              :placeholder="searchMode === 'books' ? 'Search books & authors...' : 'Search clipping text...'"
+              v-model="searchQuery"
+            >
+          </div>
+          <div class="controls-row">
+            <div class="mode-toggle">
+              <button :class="{ active: searchMode === 'books' }" @click="searchMode = 'books'">Books</button>
+              <button :class="{ active: searchMode === 'content' }" @click="searchMode = 'content'">Content</button>
+            </div>
+            <select class="sort-select" v-model="sortBy" v-if="searchMode === 'books'">
+              <option value="title">By Title</option>
+              <option value="author">By Author</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Book list (books mode) -->
+        <div class="book-list" v-if="searchMode === 'books'">
+          <div
+            class="book-item"
+            v-for="book in filteredBooks"
+            :key="book.id"
+            :class="{ selected: selectedBookId === book.id }"
+            @click="selectBook(book.id)"
+          >
+            <div class="book-info">
+              <div class="book-title" v-html="searchQuery && searchMode === 'books' ? highlightMatch(book.title, searchQuery) : book.title"></div>
+              <div class="book-author" v-html="searchQuery && searchMode === 'books' ? highlightMatch(book.author, searchQuery) : book.author"></div>
+            </div>
+            <span class="book-count">{{ book.clippings.length }}</span>
+          </div>
+          <div class="empty-state" v-if="!filteredBooks.length" style="height: auto; padding: 40px 20px;">
+            <p>No books match your search.</p>
+          </div>
+        </div>
+
+        <!-- Content search results list (content mode) -->
+        <div class="book-list" v-if="searchMode === 'content'">
+          <div v-if="!searchQuery" class="empty-state" style="height: auto; padding: 40px 20px;">
+            <p>Type to search within all clipping text.</p>
+          </div>
+          <div v-else-if="!contentResults.length" class="empty-state" style="height: auto; padding: 40px 20px;">
+            <p>No clippings match your search.</p>
+          </div>
+          <div
+            class="search-result-item"
+            v-for="result in contentResults"
+            :key="result.clipping.id"
+            @click="navigateToClipping(result.book.id, result.clipping.id)"
+            style="margin: 6px 8px; cursor: pointer;"
+          >
+            <div class="search-result-book">{{ result.book.title }}</div>
+            <div class="search-result-text" v-html="highlightMatch(result.clipping.text.substring(0, 120), searchQuery)"></div>
+          </div>
+        </div>
+
+        <!-- Sidebar footer -->
+        <div class="sidebar-footer" v-if="selectedBook">
+          <button class="btn btn-danger btn-small" @click="deleteBook(selectedBook)">Delete Book</button>
+          <button
+            class="btn btn-small"
+            v-if="selectedBookDuplicateCount > 0"
+            @click="removeDuplicates"
+          >Remove {{ selectedBookDuplicateCount }} duplicate(s)</button>
+        </div>
+      </aside>
+
+      <!-- Content pane -->
+      <main class="content">
+        <!-- No book selected -->
+        <div class="empty-state" v-if="!selectedBook">
+          <p>Select a book from the sidebar to view its clippings.</p>
+        </div>
+
+        <!-- Book detail view -->
+        <template v-if="selectedBook">
+          <div class="content-header">
+            <h2>{{ selectedBook.title }}</h2>
+            <div class="author-line" v-if="selectedBook.author">{{ selectedBook.author }}</div>
+            <div class="stats-line">
+              <span>{{ selectedBook.clippings.length }} clipping(s)</span>
+              <span v-if="selectedBookDuplicateCount > 0" style="color: var(--bookmark-color);">
+                {{ selectedBookDuplicateCount }} duplicate(s)
+              </span>
+            </div>
+            <div class="clipping-search-row">
+              <input
+                class="search-input"
+                type="text"
+                placeholder="Search within clippings..."
+                v-model="clippingSearchQuery"
+              >
+              <span class="clipping-search-count" v-if="clippingSearchQuery">
+                {{ selectedClippings.length }} match(es)
+              </span>
+            </div>
+          </div>
+
+          <div class="clipping-list">
+            <div
+              class="clipping-card"
+              v-for="clip in selectedClippings"
+              :key="clip.id"
+              :id="clip.id"
+              :class="{ duplicate: duplicateIds.has(clip.id) }"
+            >
+              <!-- Metadata row -->
+              <div class="clipping-meta">
+                <span class="clip-type-badge" :class="clip.type.toLowerCase()">
+                  <template v-if="clip.type === 'Bookmark'">&#128205;</template>
+                  <template v-else-if="clip.type === 'Note'">&#128221;</template>
+                  <template v-else>&#9998;</template>
+                  {{ clip.type }}
+                </span>
+                <span class="meta-sep">·</span>
+                <span v-if="clip.page != null">page {{ clip.page }} <span class="meta-sep">·</span></span>
+                <span>{{ locationStr(clip) }}</span>
+                <span class="meta-sep">·</span>
+                <span :title="formatDateFull(clip)">{{ formatDate(clip) }}</span>
+                <span class="duplicate-badge" v-if="duplicateIds.has(clip.id)">Duplicate</span>
+              </div>
+
+              <!-- Clipping text (view mode) -->
+              <div v-if="editingClipId !== clip.id">
+                <div class="clipping-text" v-if="clip.type !== 'Bookmark' && !clippingSearchQuery">{{ clip.text }}</div>
+                <div class="clipping-text" v-else-if="clip.type !== 'Bookmark'" v-html="highlightMatch(clip.text, clippingSearchQuery)"></div>
+                <div class="clipping-text bookmark-text" v-else>Bookmark — no text</div>
+
+                <div class="clipping-actions">
+                  <button class="btn-text btn-small" @click="startEdit(clip)" v-if="clip.type !== 'Bookmark'">Edit</button>
+                  <button class="btn-text btn-small" style="color: var(--danger);" @click="deleteClipping(clip)">Delete</button>
+                </div>
+              </div>
+
+              <!-- Clipping text (edit mode) -->
+              <div v-else>
+                <textarea class="edit-area" v-model="editText" rows="4"></textarea>
+                <div class="edit-actions">
+                  <button class="btn btn-small" @click="cancelEdit">Cancel</button>
+                  <button class="btn btn-primary btn-small" @click="saveEdit(clip)">Save</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </template>
+      </main>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

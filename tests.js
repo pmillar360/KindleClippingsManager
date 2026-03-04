@@ -174,6 +174,101 @@ describe('parseClippings', () => {
 });
 
 // ---------------------------------------------------------------------------
+// German / multi-language parser tests
+// ---------------------------------------------------------------------------
+describe('parseClippings – German Kindle', () => {
+  it('parses a German highlight entry', () => {
+    const input = [
+      'The Birds (Vesaas, Tarjei)',
+      '- Deine Markierung bei Position 511-515 | Hinzugefügt am Samstag, 28. Februar 2026 13:00:28',
+      '',
+      'Some highlighted text in German Kindle.',
+      '=========='
+    ].join('\n');
+
+    const { books, clippingOrder } = parseClippings(input);
+
+    assert.equal(books.length, 1);
+    assert.equal(books[0].title, 'The Birds');
+    assert.equal(books[0].author, 'Vesaas, Tarjei');
+    assert.equal(books[0].clippings.length, 1);
+
+    const clip = books[0].clippings[0];
+    assert.equal(clip.type, 'Highlight');
+    assert.equal(clip.page, null);
+    assert.equal(clip.locationStart, 511);
+    assert.equal(clip.locationEnd, 515);
+    assert.equal(clip.text, 'Some highlighted text in German Kindle.');
+    assert.ok(clip.addedOn instanceof Date);
+    assert.equal(clip.addedOn.getFullYear(), 2026);
+    assert.equal(clip.addedOn.getMonth(), 1); // February = 1
+    assert.equal(clip.addedOn.getDate(), 28);
+    assert.equal(clippingOrder.length, 1);
+  });
+
+  it('parses German dates with März (special char)', () => {
+    const input = [
+      'Invisible Cities (Calvino, Italo)',
+      '- Deine Markierung bei Position 338-338 | Hinzugefügt am Montag, 2. März 2026 04:22:09',
+      '',
+      'the city where memory is traded',
+      '=========='
+    ].join('\n');
+
+    const { books } = parseClippings(input);
+    const clip = books[0].clippings[0];
+
+    assert.equal(clip.locationStart, 338);
+    assert.equal(clip.locationEnd, 338);
+    assert.equal(clip.addedOn.getFullYear(), 2026);
+    assert.equal(clip.addedOn.getMonth(), 2); // March = 2
+    assert.equal(clip.addedOn.getDate(), 2);
+  });
+
+  it('groups German clippings by book', () => {
+    const input = [
+      'The Birds (Vesaas, Tarjei)',
+      '- Deine Markierung bei Position 511-515 | Hinzugefügt am Samstag, 28. Februar 2026 13:00:28',
+      '',
+      'first',
+      '==========',
+      'Invisible Cities (Calvino, Italo)',
+      '- Deine Markierung bei Position 338-338 | Hinzugefügt am Montag, 2. März 2026 04:22:09',
+      '',
+      'second',
+      '==========',
+      'The Birds (Vesaas, Tarjei)',
+      '- Deine Markierung bei Position 757-757 | Hinzugefügt am Samstag, 28. Februar 2026 13:31:58',
+      '',
+      'third',
+      '=========='
+    ].join('\n');
+
+    const { books } = parseClippings(input);
+
+    assert.equal(books.length, 2);
+    assert.equal(books[0].clippings.length, 2); // The Birds
+    assert.equal(books[1].clippings.length, 1); // Invisible Cities
+  });
+
+  it('preserves the raw German meta line for round-trip', () => {
+    const input = [
+      'Book (Author)',
+      '- Deine Markierung bei Position 100-200 | Hinzugefügt am Montag, 2. März 2026 04:22:09',
+      '',
+      'text',
+      '=========='
+    ].join('\n');
+
+    const { books } = parseClippings(input);
+    assert.equal(
+      books[0].clippings[0].metaLineRaw,
+      '- Deine Markierung bei Position 100-200 | Hinzugefügt am Montag, 2. März 2026 04:22:09'
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Serializer tests
 // ---------------------------------------------------------------------------
 describe('serializeClippings', () => {
@@ -302,6 +397,54 @@ describe('round-trip: parse then serialize', () => {
     const { books, clippingOrder } = parseClippings(raw);
 
     // Collect all texts
+    const originalTexts = new Set();
+    for (const book of books) {
+      for (const clip of book.clippings) {
+        if (clip.text) originalTexts.add(clip.text);
+      }
+    }
+
+    const output = serializeClippings(books, clippingOrder);
+    const reparsed = parseClippings(output);
+
+    const reparsedTexts = new Set();
+    for (const book of reparsed.books) {
+      for (const clip of book.clippings) {
+        if (clip.text) reparsedTexts.add(clip.text);
+      }
+    }
+
+    for (const text of originalTexts) {
+      assert.ok(reparsedTexts.has(text), `round-trip lost text: "${text.substring(0, 60)}..."`);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Round-trip test for German clippings file
+// ---------------------------------------------------------------------------
+describe('round-trip: German clippings file', () => {
+  it('preserves all entries from the German file', () => {
+    const raw = readFileSync('My Clippings Jasmin.txt', 'utf8');
+    const { books, clippingOrder } = parseClippings(raw);
+
+    const totalClippings = books.reduce((n, b) => n + b.clippings.length, 0);
+    assert.ok(totalClippings > 0, 'should have parsed German clippings');
+
+    const output = serializeClippings(books, clippingOrder);
+
+    // Re-parse the serialized output
+    const reparsed = parseClippings(output);
+    const reparsedTotal = reparsed.books.reduce((n, b) => n + b.clippings.length, 0);
+
+    assert.equal(reparsedTotal, totalClippings, 'round-trip should preserve all clippings');
+    assert.equal(reparsed.books.length, books.length, 'round-trip should preserve all books');
+  });
+
+  it('preserves German clipping text through round-trip', () => {
+    const raw = readFileSync('My Clippings Jasmin.txt', 'utf8');
+    const { books, clippingOrder } = parseClippings(raw);
+
     const originalTexts = new Set();
     for (const book of books) {
       for (const clip of book.clippings) {

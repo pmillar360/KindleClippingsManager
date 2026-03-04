@@ -53,7 +53,7 @@ function serializeEntry(book, clipping) {
     ? `${book.title} (${book.author})`
     : book.title;
 
-  const metaLine = buildMetaLine(clipping);
+  const metaLine = clipping.metaLineRaw || buildMetaLine(clipping);
   const text = clipping.text || '';
 
   return `${titleLine}\n${metaLine}\n\n${text}\n${SEPARATOR}`;

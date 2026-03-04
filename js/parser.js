@@ -1,8 +1,50 @@
 /**
  * Parses a Kindle "My Clippings.txt" file into a structured data model.
+ * Supports multiple Kindle languages (English, German, Spanish, French, Italian, Portuguese, Dutch).
  */
 
 const SEPARATOR = '==========';
+
+/**
+ * Map of known clipping type keywords across Kindle languages to normalized English types.
+ */
+const TYPE_KEYWORDS = {
+  // English
+  highlight: 'Highlight', bookmark: 'Bookmark', note: 'Note',
+  // German
+  markierung: 'Highlight', lesezeichen: 'Bookmark', notiz: 'Note',
+  // Spanish
+  subrayado: 'Highlight', resaltado: 'Highlight', marcador: 'Bookmark', nota: 'Note',
+  // French
+  surlignement: 'Highlight', signet: 'Bookmark',
+  // Italian
+  evidenziazione: 'Highlight', segnalibro: 'Bookmark',
+  // Portuguese
+  destaque: 'Highlight',
+  // Dutch
+  markering: 'Highlight', bladwijzer: 'Bookmark', notitie: 'Note',
+};
+
+const TYPE_PATTERN = new RegExp(
+  '\\b(' + Object.keys(TYPE_KEYWORDS).join('|') + ')\\b', 'i'
+);
+
+/**
+ * Map of month names across Kindle languages to 0-based month index.
+ */
+const MONTH_MAP = {};
+const MONTHS_BY_LANG = {
+  en: ['january','february','march','april','may','june','july','august','september','october','november','december'],
+  de: ['januar','februar','märz','april','mai','juni','juli','august','september','oktober','november','dezember'],
+  es: ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'],
+  fr: ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'],
+  it: ['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'],
+  pt: ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'],
+  nl: ['januari','februari','maart','april','mei','juni','juli','augustus','september','oktober','november','december'],
+};
+for (const months of Object.values(MONTHS_BY_LANG)) {
+  months.forEach((name, idx) => { MONTH_MAP[name] = idx; });
+}
 
 /**
  * Parse the full text of a My Clippings.txt file.
@@ -84,6 +126,7 @@ function parseEntry(raw, index) {
     locationEnd: meta.locationEnd,
     addedOn: meta.addedOn,
     addedOnRaw: meta.addedOnRaw,
+    metaLineRaw: metaLine,
     text: text
   };
 
@@ -113,65 +156,159 @@ function parseTitleAuthor(line) {
 }
 
 /**
- * Parse the metadata line.
- * Formats:
- *   - Your Highlight at location 25-26 | Added on Sunday, 6 March 2022 13:23:35
- *   - Your Bookmark at location 92 | Added on ...
- *   - Your Bookmark on page 117 | location 1788 | Added on ...
- *   - Your Highlight on page 4 | location 61-61 | Added on ...
- *   - Your Note on page 10 | location 150-152 | Added on ...
+ * Parse the metadata line in any supported Kindle language.
+ * Uses structural parsing based on pipe delimiters and number positions.
+ *
+ * Known formats (any language):
+ *   - {Your} {Type} at {location} {N}-{N} | {Added on} {date}
+ *   - {Your} {Type} on {page} {N} | {location} {N} | {Added on} {date}
+ *   - {Your} {Type} on {page} {N} | {location} {N}-{N} | {Added on} {date}
  */
 function parseMetaLine(line) {
-  if (!line.startsWith('- Your ')) return null;
+  if (!line.startsWith('- ')) return null;
 
-  // Extract type
-  const typeMatch = line.match(/^- Your (Highlight|Bookmark|Note)\s/i);
-  if (!typeMatch) return null;
-  const type = typeMatch[1];
+  const segments = line.split('|').map(s => s.trim());
+  if (segments.length < 2) return null;
 
-  // Extract page (optional)
+  // Type detection from first segment
+  const type = detectType(segments[0]);
+
+  // Date: always the last segment
+  const dateSeg = segments[segments.length - 1];
+  const addedOnRaw = extractDateRaw(dateSeg);
+  const addedOn = parseKindleDate(addedOnRaw);
+
   let page = null;
-  const pageMatch = line.match(/on page (\d+)/);
-  if (pageMatch) {
-    page = parseInt(pageMatch[1], 10);
-  }
-
-  // Extract location
   let locationStart = 0;
   let locationEnd = null;
-  const locMatch = line.match(/location (\d+)(?:-(\d+))?/);
-  if (locMatch) {
-    locationStart = parseInt(locMatch[1], 10);
-    locationEnd = locMatch[2] ? parseInt(locMatch[2], 10) : null;
-  }
 
-  // Extract date - everything after "Added on "
-  let addedOn = null;
-  let addedOnRaw = '';
-  const dateMatch = line.match(/Added on (.+)$/);
-  if (dateMatch) {
-    addedOnRaw = dateMatch[1].trim();
-    addedOn = parseKindleDate(addedOnRaw);
+  if (segments.length >= 3) {
+    // [type + page] | [location] | ... | [date]
+    page = extractLastNumber(segments[0]);
+    const loc = extractLocationRange(segments[segments.length - 2]);
+    locationStart = loc.start;
+    locationEnd = loc.end;
+  } else {
+    // [type + location] | [date]
+    const loc = extractLocationRange(segments[0]);
+    locationStart = loc.start;
+    locationEnd = loc.end;
   }
 
   return { type, page, locationStart, locationEnd, addedOn, addedOnRaw };
 }
 
 /**
- * Parse Kindle date format: "Sunday, 6 March 2022 13:23:35"
+ * Detect the clipping type from a metadata segment using known keywords.
+ * Falls back to 'Highlight' if no keyword is recognized.
+ */
+function detectType(segment) {
+  const match = segment.match(TYPE_PATTERN);
+  if (match) {
+    return TYPE_KEYWORDS[match[1].toLowerCase()];
+  }
+  return 'Highlight';
+}
+
+/**
+ * Extract the last number from a segment (used for page numbers).
+ */
+function extractLastNumber(segment) {
+  const matches = [...segment.matchAll(/\d+/g)];
+  if (matches.length === 0) return null;
+  return parseInt(matches[matches.length - 1][0], 10);
+}
+
+/**
+ * Extract a location or location range from a segment.
+ * Looks for N-N (range) first, then falls back to the last number.
+ */
+function extractLocationRange(segment) {
+  const rangeMatch = segment.match(/(\d+)-(\d+)/);
+  if (rangeMatch) {
+    return {
+      start: parseInt(rangeMatch[1], 10),
+      end: parseInt(rangeMatch[2], 10)
+    };
+  }
+  const matches = [...segment.matchAll(/\d+/g)];
+  if (matches.length > 0) {
+    return {
+      start: parseInt(matches[matches.length - 1][0], 10),
+      end: null
+    };
+  }
+  return { start: 0, end: null };
+}
+
+/**
+ * Extract the raw date string from a date segment.
+ * Strips the language-specific prefix (e.g., "Added on", "Hinzugefugt am")
+ * and returns from the weekday name onward.
+ */
+function extractDateRaw(segment) {
+  const commaIdx = segment.indexOf(',');
+  if (commaIdx === -1) return segment.trim();
+
+  // Walk back from the comma to find the start of the weekday word
+  let i = commaIdx - 1;
+  while (i >= 0 && segment[i] !== ' ') i--;
+
+  return segment.substring(i + 1).trim();
+}
+
+/**
+ * Parse a Kindle date string in any supported language.
+ * Input format: "Weekday, D[.] MonthName YYYY HH:MM:SS"
  */
 function parseKindleDate(str) {
-  // Remove the weekday prefix: "Sunday, "
+  if (!str) return null;
+
+  // Remove weekday prefix (everything up to and including the comma)
   const commaIdx = str.indexOf(',');
-  if (commaIdx === -1) return new Date(str);
-  const datePart = str.substring(commaIdx + 1).trim();
+  let datePart = commaIdx !== -1 ? str.substring(commaIdx + 1).trim() : str;
 
-  // datePart is like "6 March 2022 13:23:35"
-  const d = new Date(datePart);
-  if (!isNaN(d.getTime())) return d;
+  // Extract and remove time
+  const timeMatch = datePart.match(/(\d{1,2}):(\d{2}):(\d{2})/);
+  if (!timeMatch) {
+    const d = new Date(str);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  datePart = datePart.replace(timeMatch[0], '').trim();
 
-  // Fallback: try full string
-  return new Date(str);
+  // Extract and remove year
+  const yearMatch = datePart.match(/\b((?:19|20)\d{2})\b/);
+  if (!yearMatch) return null;
+  datePart = datePart.replace(yearMatch[0], '').trim();
+
+  // Remaining tokens: day (with optional trailing dot) and month name
+  const tokens = datePart.split(/\s+/).filter(Boolean);
+  let day = null;
+  let month = null;
+
+  for (const token of tokens) {
+    const cleaned = token.replace(/\.$/, '');
+    if (day === null && /^\d{1,2}$/.test(cleaned)) {
+      day = parseInt(cleaned, 10);
+    } else if (month === null && MONTH_MAP[cleaned.toLowerCase()] !== undefined) {
+      month = MONTH_MAP[cleaned.toLowerCase()];
+    }
+  }
+
+  if (day === null || month === null) {
+    // Fallback for unrecognized date formats
+    const d = new Date(str);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  return new Date(
+    parseInt(yearMatch[1], 10),
+    month,
+    day,
+    parseInt(timeMatch[1], 10),
+    parseInt(timeMatch[2], 10),
+    parseInt(timeMatch[3], 10)
+  );
 }
 
 /**

@@ -1,74 +1,62 @@
 # KCM — Kindle Clippings Manager
 
-A lightweight, browser-based app for reading, browsing, searching, editing, and saving your Kindle highlights and bookmarks from a `My Clippings.txt` file. No installation, no server, no backend — runs entirely in your browser.
+KCM is a lightweight browser app for reviewing, searching, editing, and organizing Kindle highlights, notes, and bookmarks exported from `My Clippings.txt`. It runs entirely in the browser and keeps the file as the source of truth.
+
+---
+
+## Overview
+
+This project is built for Kindle readers who want a cleaner way to work with large annotation files without a backend or account setup. It lets you load a `My Clippings.txt` export, browse entries by book or author, search text, edit clipping content, remove duplicates, and download the updated file in Kindle-compatible format.
 
 ---
 
 ## Features
 
-- **Load & Save** — Open your `My Clippings.txt` via a file picker and download the modified file at any time. Unsaved-change warnings prevent accidental data loss.
-- **Browse by Book or Author** — A sidebar lists all books alphabetically, sortable by title or author. Each entry shows the clipping count.
-- **Search** — Filter books and authors in real time, or switch to full-text content search to find specific passages across all clippings.
-- **Edit Clippings** — Inline editing of highlight text with Save / Cancel controls.
-- **Delete Clippings or Entire Books** — Remove individual clippings or all clippings for a book, with confirmation prompts.
-- **Duplicate Detection** — Clippings with identical location and text are flagged, and can be removed in bulk.
-- **Clipping-level search** — Filter clippings within a selected book by text.
+- **Open and review a Kindle export** — Load a `My Clippings.txt` file through the browser file picker.
+- **Browse by book or author** — View the library sorted by title or author, with each book showing its clipping count.
+- **Search across the library** — Filter books and authors in real time, or search inside clipping text across all entries.
+- **Edit clipping text** — Update a highlight or note inline using the Edit, Save, and Cancel controls.
+- **Delete entries or entire books** — Remove a single clipping or all clippings for a selected book after confirmation.
+- **Detect duplicates** — Highlight repeated entries by location and text and remove them in bulk.
+- **Download the updated file** — Rebuild the Kindle-compatible output and save it as a new `.txt` file.
 
 ---
 
-## Getting Started
+## Who This Is For
 
-No build step required.
-
-1. Clone or download this repository.
-2. Open `index.html` in any modern browser (Chrome or Edge recommended for broadest File System API support).
-3. Click **Open File** and select your Kindle's `My Clippings.txt`.
-4. Browse, search, and edit your clippings.
-5. Click **Download updated clippings file** to save your changes.
-
-> **Tip:** On Chrome/Edge, the app uses a standard `<input type="file">` picker. The downloaded file can be renamed back to `My Clippings.txt` and copied to your Kindle.
+This tool is designed for Kindle users who want a straightforward way to review annotations, clean up duplicates, and keep only the highlights and notes they still want to keep.
 
 ---
 
-## Project Structure
+## Input File Format
+
+The app expects the standard Kindle clippings format:
 
 ```
-KCM/
-├── index.html          # Single-page app shell (Vue 3 via CDN)
-├── css/
-│   └── style.css       # App styles
-├── js/
-│   ├── app.js          # Vue 3 application logic & state
-│   ├── parser.js       # Parses My Clippings.txt into a data model
-│   └── serializer.js   # Reconstructs My Clippings.txt from the data model
-├── package.json        # Minimal config (type: module)
-├── tests.js            # Unit tests
-└── MVP.md              # Product requirements
+{Book Title} ({Author Name})
+- Your {Highlight|Bookmark|Note} [on page {N} |] at location {N}-{N} | Added on {Weekday}, {D Month YYYY HH:MM:SS}
+
+{clipping text}
+==========
 ```
 
----
-
-## Tech Stack
-
-| Concern | Choice |
-|---------|--------|
-| Framework | Vue 3 (via CDN, no build step) |
-| Styling | Custom CSS |
-| File I/O | `<input type="file">` + `Blob` download |
-| Storage | In-memory only — the file is the source of truth |
+Notes:
+- Bookmarks have no clipping text.
+- A book may appear under slightly different title or author spellings across clippings.
+- Duplicate clippings (same location and same text) may exist.
 
 ---
 
 ## Data Model
 
-```
+```text
 AppState
-├── books: Book[]
-├── clippingOrder: string[]   // preserves original file order
-└── isDirty: boolean
+├── filePath: string | null
+├── isDirty: boolean
+└── books: Book[]
 
 Book
-├── id: string                // derived from title + author
+├── id: string
 ├── title: string
 ├── author: string
 └── clippings: Clipping[]
@@ -85,28 +73,69 @@ Clipping
 
 ---
 
-## Input File Format
+## Serialization
 
-The app expects the standard Kindle clippings format:
+When the file is downloaded, the app rebuilds the `My Clippings.txt` structure in Kindle-compatible format:
 
-```
-{Book Title} ({Author Name})
-- Your {Highlight|Bookmark|Note} [on page {N} |] at location {N}-{N} | Added on {Weekday}, {D Month YYYY HH:MM:SS}
+```text
+{title} ({author})
+- Your {type} [on page {N} |] at location {N}[-{N}] | Added on {Weekday}, {D Month YYYY HH:MM:SS}
 
-{clipping text}
+{text}
 ==========
 ```
 
-Bookmarks have no clipping text. The parser handles BOM characters, variant title/author spellings, and duplicate entries.
+- Deleted entries are omitted.
+- Edited text replaces the original text.
+- Clippings are preserved in the original file order as far as the app stores it.
 
 ---
 
-## Serialization
+## Getting Started
 
-When downloading, the app reconstructs the exact `My Clippings.txt` format, preserving original clipping order. Deleted entries are omitted and edited text replaces the original.
+No build step is required.
+
+1. Clone or download this repository.
+2. Open `index.html` in a modern browser.
+3. Click **Open File** and choose your Kindle export named `My Clippings.txt`.
+4. Browse, search, edit, and remove clippings as needed.
+5. Click **Download updated clippings file** to save the modified content as a new file.
+
+> Tip: This app uses the browser file picker and download flow rather than writing directly back to the original source file. After downloading, you can rename the file back to `My Clippings.txt` and copy it to your Kindle if needed.
+
+---
+
+## Project Structure
+
+```text
+KCM/
+├── index.html          # App shell
+├── css/
+│   └── style.css       # App styling
+├── js/
+│   ├── app.js          # UI logic and application state
+│   ├── parser.js       # Parses My Clippings.txt into a data model
+│   └── serializer.js   # Rebuilds My Clippings.txt from the data model
+├── package.json        # Minimal project config
+├── tests.js            # Unit tests
+├── README.md           # Project documentation
+├── testfiles/          # Sample clipping files for testing
+└── .docs/              # Project docs directory
+```
+
+---
+
+## Tech Stack
+
+| Concern | Choice | Rationale |
+|---------|--------|-----------|
+| Framework | Vanilla JS or Vue 3 via CDN | Lightweight and no build step |
+| Styling | Custom CSS | Simple, focused UI |
+| File I/O | File input and blob download | Runs fully in the browser |
+| Storage | In-memory only | Keeps the file as the source of truth |
 
 ---
 
 ## Browser Compatibility
 
-Tested on Chrome and Edge (Chromium). Firefox is supported for reading; file download works in all modern browsers.
+The app is designed for modern Chromium browsers such as Chrome and Edge. It uses standard browser APIs for file selection and downloads, so it works best in those environments.

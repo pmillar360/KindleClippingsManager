@@ -1,0 +1,17 @@
+Synthetic Book (Example Author)
+- Your Highlight on page 3 | location 10-12 | Added on Wednesday, 28 October 2026 12:30:00
+
+This passage was written solely as a synthetic test fixture.
+
+It contains another paragraph.
+==========
+Synthetic Book (Example Author)
+- Your Note at location 10 | Added on Wednesday, 28 October 2026 12:31:00
+
+A synthetic personal note.
+==========
+Another Synthetic Book (Second Author)
+- Your Bookmark at location 30 | Added on Wednesday, 28 October 2026 12:32:00
+
+
+==========

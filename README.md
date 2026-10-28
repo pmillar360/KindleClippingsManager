@@ -1,3 +1,76 @@
+# Kindle Highlights Sync — Calibre plugin
+
+Native Qt plugin for importing Kindle clippings and DRM-free KFX/YJR annotations,
+managing persistent exclusions, and safely synchronizing Markdown to Obsidian.
+The original KCM browser app remains available below and through `index.html`.
+
+Requires **Calibre 9.17 or newer**. Windows runtime and Ubuntu engine tests pass;
+physical Kindle USB/MTP and Linux Calibre GUI validation remain outstanding. Version 0.1.0
+is a preview build, not a claim of completed hardware/platform certification.
+
+## Install
+
+1. Build the ZIP with `calibre-debug tools/build_plugin.py`, or use the supplied
+   `dist/Kindle-Highlights-Sync-0.1.0.zip`.
+2. In Calibre, open **Preferences → Plugins → Load plugin from file** and select
+   that ZIP. Restart Calibre when prompted.
+3. Add **Sync Kindle Highlights** to the toolbar through **Preferences → Toolbars
+   & menus** if it is not already visible.
+4. Open its toolbar menu → **Settings**. Select an existing Obsidian vault,
+   destination folder, and optionally a fallback import folder.
+5. Connect and unlock the Kindle, then click **Sync Kindle Highlights**. Review
+   the preview and synchronize. Without a device, the configured fallback folder
+   or a folder picker supplies the input.
+
+No pip installs, network access, Obsidian plugin, or retained library KFX duplicate
+is required. Dependencies are included or provided by Calibre.
+
+## Daily use
+
+- Import sources are read only. For manual recovery, keep each book’s `.kfx`
+  alongside its matching `.sdr` directory containing the `.yjr` sidecar.
+- Use **Manage highlights** to search, edit, exclude/restore, choose the correct
+  Calibre edition, export one book, or save a cleaned clippings copy elsewhere.
+- Uncheck a book in the preview to skip it for that synchronization only.
+- Write Obsidian commentary **outside** the marked managed section. Editing
+  managed content creates a conflict and preserves the entire existing note.
+- Backups are stored under the destination’s `.kindle-highlights-backups` folder.
+  Missing or excluded books never delete existing notes.
+- YAML properties are created initially and then treated as user-owned. Managed
+  title/author/series text follows the selected metadata preference.
+- KFX positions are labeled as KFX positions. They are never passed off as Kindle
+  locations or EPUB offsets. An embedded location map must be corroborated by
+  multiple existing clippings before it is used to reconcile clipping limits.
+
+See [the plugin guide](docs/PLUGIN.md), [architecture](docs/ARCHITECTURE.md),
+[validation and limitations](docs/VALIDATION.md), and
+[dependency notices](THIRD_PARTY_NOTICES.md).
+
+## Development checks
+
+```powershell
+$env:CALIBRE_CONFIG_DIRECTORY = Join-Path (Get-Location) '.calibre-test-profile'
+calibre-debug tools/run_tests.py
+node --test tests.js
+calibre-debug tools/build_plugin.py
+calibre-customize -a dist/Kindle-Highlights-Sync-0.1.0.zip
+$env:QT_QPA_PLATFORM = 'offscreen'
+calibre-debug tools/smoke_calibre.py
+```
+
+Private recovery test, only when the ignored original fixtures are present:
+
+```powershell
+$env:KHS_PRIVATE_TESTS = '1'
+calibre-debug tools/run_tests.py
+```
+
+The ZIP includes an allowlist of plugin source and notices only. It never includes
+`testfiles`, private highlights, local state, or test profiles. Do not commit those
+inputs. The original browser application and its documentation follow.
+
+---
+
 # KCM — Kindle Clippings Manager
 
 KCM is a lightweight browser app for reviewing, searching, editing, and organizing Kindle highlights, notes, and bookmarks exported from `My Clippings.txt`. It runs entirely in the browser and keeps the file as the source of truth.

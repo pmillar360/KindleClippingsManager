@@ -376,7 +376,7 @@ describe('serializeClippings', () => {
 // ---------------------------------------------------------------------------
 describe('round-trip: parse then serialize', () => {
   it('preserves all entries from the example file', () => {
-    const raw = readFileSync('My Clippings - Example.txt', 'utf8');
+    const raw = readFileSync(new URL('./tests/fixtures/clippings-en.txt', import.meta.url), 'utf8');
     const { books, clippingOrder } = parseClippings(raw);
 
     const totalClippings = books.reduce((n, b) => n + b.clippings.length, 0);
@@ -393,7 +393,7 @@ describe('round-trip: parse then serialize', () => {
   });
 
   it('preserves clipping text through round-trip', () => {
-    const raw = readFileSync('My Clippings - Example.txt', 'utf8');
+    const raw = readFileSync(new URL('./tests/fixtures/clippings-en.txt', import.meta.url), 'utf8');
     const { books, clippingOrder } = parseClippings(raw);
 
     // Collect all texts
@@ -425,7 +425,7 @@ describe('round-trip: parse then serialize', () => {
 // ---------------------------------------------------------------------------
 describe('round-trip: German clippings file', () => {
   it('preserves all entries from the German file', () => {
-    const raw = readFileSync('My Clippings Jasmin.txt', 'utf8');
+    const raw = readFileSync(new URL('./tests/fixtures/clippings-de.txt', import.meta.url), 'utf8');
     const { books, clippingOrder } = parseClippings(raw);
 
     const totalClippings = books.reduce((n, b) => n + b.clippings.length, 0);
@@ -442,7 +442,7 @@ describe('round-trip: German clippings file', () => {
   });
 
   it('preserves German clipping text through round-trip', () => {
-    const raw = readFileSync('My Clippings Jasmin.txt', 'utf8');
+    const raw = readFileSync(new URL('./tests/fixtures/clippings-de.txt', import.meta.url), 'utf8');
     const { books, clippingOrder } = parseClippings(raw);
 
     const originalTexts = new Set();

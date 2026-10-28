@@ -1,0 +1,51 @@
+{
+  "krds": {
+    "commit": "9c8a0b0ec9cb6af72fba900a6f9b09f92de477de",
+    "url": "https://github.com/K-R-D-S/KRDS",
+    "sha256": "921ea44e31e872afc38283b9cdfc3d167b11dbad1831379e8fa28ac822d835b2"
+  },
+  "kfxlib": {
+    "version": "2.25.0",
+    "mirror_commit": "716525d090f94db240c593fd4ea5d5771805e6d2",
+    "url": "https://github.com/aakar/KFX-Highlights",
+    "archive_sha256": "a4d95a13d987c9939b2755285663670987aac2afa10993f2ecf24e7526230877"
+  },
+  "files": {
+    "kfxlib/__init__.py": "7cc348aecc6443425e4a1c1338346df0f2fd86a2de2d9b04b491d00c1007fc26",
+    "kfxlib/epub_output.py": "a7f641f256934042487985b9670459c2dbe3f1c6617f54496ab3c1d3e0d36f4a",
+    "kfxlib/ion.py": "6d5c30edd1ccb9d09b8ce00ec17d8c0c2c572edaf88f6e1bb4e1de169b58df30",
+    "kfxlib/ion_binary.py": "8ce3307b338bf6def97410762bbd726b1ffc98deb95cafca888dd29209521175",
+    "kfxlib/ion_symbol_table.py": "9a6032e63fc4db9dea19f8c23f7320cf05db169f493b801734965af61b551de2",
+    "kfxlib/ion_text.py": "015a1bfb73b1132e0c7521f4e0bcc90a60b39c32f0615900411c317c8a9b1f37",
+    "kfxlib/jxr_container.py": "cb75cafd9dde3a90d08f48c01617fdeb7e7888d7926f0bff93fe60faf1b65dad",
+    "kfxlib/jxr_image.py": "8632f4e99e92ead0b11a87e7f5502ccd0fc4371e2044ba223e649fa42520f27a",
+    "kfxlib/jxr_misc.py": "99b6e4817686dfb4a5187f4d8b67ba1c9986d1fbad5444a45db3c4311213851a",
+    "kfxlib/kfx_container.py": "2f0d66cf8339a0e4d0a4c11a0bbf497b09efbc4bd565ba80aad9fb3e8500670d",
+    "kfxlib/kpf_book.py": "b58ed006cd7f1dd584d3be0794da7ce4d0df0d4046d6ac24d59f7ed42bbe3718",
+    "kfxlib/kpf_container.py": "cda610cd8ed89402420c204fc623575d013b97b7bbb5f086719f629c5ff008d0",
+    "kfxlib/message_logging.py": "878d7e3a5af75dcb2732444b0e647dd9dbd7eaadaf7dcfe87c419d8db3240136",
+    "kfxlib/original_source_epub.py": "5ec7af8fa8b54a51c810ddeecc6ff0a3606c8004bff986d9793abf717c797cd1",
+    "kfxlib/resources.py": "f8675fce200ed7b96d00ddf85566c77a0167dafd304bc0af24e2e11a607b0707",
+    "kfxlib/unpack_container.py": "165d3766e96849c8b337df652542c9a11e3e7867abc41bccdfdcca70e9288330",
+    "kfxlib/utilities.py": "57a9075e67ffbc5773bfc931daa1179bad09ca8f06772a2c52e3b0ae5407240e",
+    "kfxlib/version.py": "56f857268b52c1913fa3c8731f21980483acaa089b530463aa733648aa6362fb",
+    "kfxlib/yj_book.py": "fe2c8a71300825f0eea0d0f8e9a9d7ce47870895c95f7cdc7c64f9af7f8fd9c3",
+    "kfxlib/yj_container.py": "93a11861713470b6244d99f8c2693f36811cd06e31ce42686443ea69a6072faa",
+    "kfxlib/yj_metadata.py": "5792344aa6a4f1c850a76d84fd5b069f9827ad6949ff0d55edb1b15968271276",
+    "kfxlib/yj_position_location.py": "3354b0a77ed73650fe8c08cdd0e98d8f74a80355c838583e4b63359282923591",
+    "kfxlib/yj_structure.py": "f21cc1a63b181d9dcb067c9cf0f5f9f4c1b63341f0964c57602e579d94343eb8",
+    "kfxlib/yj_symbol_catalog.py": "ab9f714da689a3fb3c4f3315af7f757f0e3caaa3d6facccd03bcbd859f284803",
+    "kfxlib/yj_to_epub.py": "3f1afe677752068649159acd1912207718ba9cbf1fd40c2350ebb1c9ae4c1fb0",
+    "kfxlib/yj_to_epub_content.py": "8b078121f6a964e59f335e6e83daca6fa9094437cb00847bc8eff3da3af39580",
+    "kfxlib/yj_to_epub_illustrated_layout.py": "61ea2d0b52dfcef8c9f28767b8edb07108190abeda6d8b9f46480ff8c709744d",
+    "kfxlib/yj_to_epub_metadata.py": "f5c18776806a992d5f5c1bdc326abc628086ebca5e7b011a68c01934daffb119",
+    "kfxlib/yj_to_epub_misc.py": "70f8b4d13ba49552ee15a97c7c0628c0cfbe1dca40de2407de8ddd042d961ee9",
+    "kfxlib/yj_to_epub_navigation.py": "45ca0bbe3aeb61423b2cdc90e5c1695e6d0da6071d8cdaeea6851ba9868502fb",
+    "kfxlib/yj_to_epub_notebook.py": "e3d9726dee73d7d4823c41b95d238c9a6686aae5d76df869224e05da652a445e",
+    "kfxlib/yj_to_epub_properties.py": "6e525e3b3b8fecb6cfc17ed5b245bae2d8920d80a4b877ce9ee3995dd6ae3325",
+    "kfxlib/yj_to_epub_resources.py": "da5467394438a168a1b212536f8b591883564e971a56d0b490e7920bed8c3892",
+    "kfxlib/yj_to_image_book.py": "72be0fbec39e2bdf1f967af42e49e1dc180a2159c9018ec3bbfad0bc329288f3",
+    "kfxlib/yj_versions.py": "aee241f37f6f3f3697cf4baf6e5efa8a87b849738514decc44394cab0c1c0453",
+    "krds.py": "921ea44e31e872afc38283b9cdfc3d167b11dbad1831379e8fa28ac822d835b2"
+  }
+}

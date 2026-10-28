@@ -1,2 +1,9 @@
 tmpclaude*
 testfiles/*
+.deps/
+.calibre-test-profile/
+.test-output/
+__pycache__/
+*.py[cod]
+dist/
+.uv-cache/

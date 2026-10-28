@@ -1,0 +1,10 @@
+Synthetisches Buch (Beispiel Autor)
+- Deine Markierung bei Position 511-515 | Hinzugefügt am Samstag, 28. Februar 2026 13:00:28
+
+Dieser Text ist ein synthetisches Testbeispiel.
+==========
+Synthetisches Buch (Beispiel Autor)
+- Deine Notiz bei Position 511 | Hinzugefügt am Montag, 2. März 2026 04:22:09
+
+Eine synthetische Notiz.
+==========

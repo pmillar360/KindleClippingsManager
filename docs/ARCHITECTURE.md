@@ -17,6 +17,8 @@ deletion model were replaced with stable identities and persistent decisions.
 - `plugin/core/storage.py`: SQLite migration, provenance aliases, import history,
   reconciliation, edit overrides, and independent exclusions.
 - `plugin/core/markdown.py`: the single source-independent renderer.
+- `plugin/core/note_merge.py`: stable-block three-way merging, book-order
+  insertion, retained local edits, historical duplicate reconciliation.
 - `plugin/core/sync.py`: validation, preview plans, ownership checks, recoverable
   backups, journal, replacement, and successful synchronization events.
 - `plugin/calibre_adapter.py`: library snapshots and read-only device adapters.
@@ -33,6 +35,17 @@ lists `.sdr` content without changing Calibre’s normal ignore policy or cache.
 Calibre book identity hashes the library UUID and local book ID. Provisional
 source identities hash normalized title/author metadata. Established aliases
 survive later matching; source provenance is independent of the canonical ID.
+Provisional source books also reconcile against unambiguous stored metadata and
+identifiers. Distinct canonical Calibre records are never coalesced this way.
+
+Sync discovery reads only Markdown within the selected destination, excluding
+hidden backup folders. Notes are recognized by identity or unambiguous metadata,
+not filename suffixes. Sync state stores the generated baseline, separately from
+the actual merged note, so personal edits remain distinguishable on later runs.
+Highlight bodies merge independently; numbering and chapter headings may update.
+Changed notes still use a backed-up atomic file replacement for crash safety.
+Duplicate sources are hash-checked and archived only after the canonical note
+and state commit. An interrupted archival operation is rediscovered on retry.
 
 Import identity includes annotation kind, source book, positional coordinate
 system, selected text, and available creation metadata. KFX content fingerprints

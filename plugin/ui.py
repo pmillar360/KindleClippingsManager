@@ -34,9 +34,13 @@ class PreviewDialog(QDialog):
             select.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsUserCheckable)
             select.setCheckState(Qt.CheckState.Checked)
             self.table.setItem(index, 0, select)
-            for column, text in enumerate((change.title, change.action, change.reason or change.path), 1):
+            detail = change.reason or change.path
+            if change.duplicates:
+                detail += '\nMerge and archive: ' + ', '.join(Path(p).name for p, _ in change.duplicates)
+            for column, text in enumerate((change.title, change.action, detail), 1):
                 self.table.setItem(index, column, QTableWidgetItem(text))
         self.table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.Stretch)
+        self.table.resizeRowsToContents()
         layout.addWidget(self.table)
         self.details = QPlainTextEdit()
         self.details.setReadOnly(True)

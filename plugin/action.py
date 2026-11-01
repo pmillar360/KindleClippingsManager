@@ -230,6 +230,7 @@ class KindleHighlightsAction(InterfaceAction):
         self._finish()
         stats = self.import_stats
         text = (f'Notes created: {summary["created"]}\nNotes updated: {summary["updated"]}\nUnchanged: {summary["unchanged"]}\n'
+                f'Duplicate notes merged and archived: {summary["merged"]}\n'
                 f'Conflicts preserved: {summary["conflicts"]}\nWrite errors: {summary["errors"]}\n'
                 f'New highlights: {stats.get("new", 0)}\nExisting / duplicate records: {stats.get("existing", 0)}\n'
                 f'Recovery failures: {stats.get("recovery_failures", 0)}\n'

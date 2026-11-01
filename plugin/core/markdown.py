@@ -17,6 +17,8 @@ class MarkdownOptions:
     date_format: str = '%Y-%m-%d'
     yaml: bool = True
     notes: bool = True
+    compact: bool = False
+    group_chapters: bool = False
 
 
 def inline(value):
@@ -35,7 +37,8 @@ def passage(text, quoted):
 def frontmatter(book, options):
     if not options.yaml:
         return ''
-    values = {'title': book.title, 'author': ', '.join(book.authors), 'tags': ['books', 'highlights']}
+    values = {'title': book.title, 'author': ', '.join(book.authors), 'khs_book_id': book.id,
+              'tags': ['books', 'highlights']}
     if book.series:
         values['series'] = book.series
     if book.published:
@@ -43,6 +46,22 @@ def frontmatter(book, options):
     if book.identifiers:
         values['identifiers'] = book.identifiers
     return '---\n' + '\n'.join(k + ': ' + json.dumps(v, ensure_ascii=False) for k, v in values.items()) + '\n---\n\n'
+
+
+def order_key(h):
+    # Keep coordinate systems distinct; mapped Kindle locations take precedence.
+    # Unmapped KFX coordinates form their own ordered group after locations.
+    if h.location_start is not None:
+        coordinate = (0, '', h.location_start)
+    elif h.position_start is not None:
+        coordinate = (1, h.position_system or '', h.position_start)
+    else:
+        coordinate = (3, '', 0)
+    return (*coordinate, h.created_at or '', h.id)
+
+
+def ordered(highlights):
+    return sorted(highlights, key=order_key)
 
 
 def render(book, highlights, options=None):
@@ -55,34 +74,40 @@ def render(book, highlights, options=None):
     lines += ['## Highlights', '']
     active = [h for h in highlights if not h.excluded and not h.needs_recovery and h.kind in ('highlight', 'note')
               and (h.kind != 'note' or options.notes) and h.text.strip()]
-    active.sort(key=lambda h: (h.position_start if h.position_start is not None else h.location_start if h.location_start is not None else 2**63, h.created_at or '', h.id))
+    active = ordered(active)
+    chapter = object()
     for number, h in enumerate(active, 1):
         lines += [f'<!-- khs:{h.id} -->']
+        if options.group_chapters and h.chapter != chapter:
+            chapter = h.chapter
+            lines += ['### ' + inline(chapter or 'Other highlights'), '']
         label = 'Note' if h.kind == 'note' else 'Highlight'
         if options.numbering:
-            lines += [f'### {label} {number}', '']
+            lines += [('####' if options.group_chapters else '###') + f' {label} {number}', '']
         lines += [passage(h.text, options.blockquotes), '']
         if options.notes and h.note:
             lines += ['**Note:**', passage(h.note, options.blockquotes), '']
+        metadata = []
         if options.positions:
             if h.page:
-                lines.append('**Page:** ' + inline(h.page))
+                metadata.append('**Page:** ' + inline(h.page))
             if h.location_start is not None:
                 location = str(h.location_start)
                 if h.location_end is not None and h.location_end != h.location_start:
                     location += '–' + str(h.location_end)
-                lines.append('**Location:** ' + location)
+                metadata.append('**Location:** ' + location)
             elif h.position_start is not None:
                 # Never mislabel a KFX PID as a Kindle location.
-                lines.append('**KFX position:** ' + str(h.position_start) + ('–' + str(h.position_end) if h.position_end != h.position_start else ''))
+                metadata.append('**KFX position:** ' + str(h.position_start) + ('–' + str(h.position_end) if h.position_end is not None and h.position_end != h.position_start else ''))
             if h.chapter:
-                lines.append('**Chapter:** ' + inline(h.chapter))
+                metadata.append('**Chapter:** ' + inline(h.chapter))
         if options.dates and h.created_at:
             try:
                 date = datetime.fromisoformat(h.created_at).strftime(options.date_format)
-                lines.append('**Highlighted:** ' + inline(date))
+                metadata.append('**Highlighted:** ' + inline(date))
             except (ValueError, TypeError):
                 pass
+        lines += ([' · '.join(metadata)] if options.compact and metadata else metadata)
         lines.append('')
     lines += [END]
     return '\n'.join(lines) + '\n'

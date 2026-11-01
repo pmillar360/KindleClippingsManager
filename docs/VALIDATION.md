@@ -1,9 +1,10 @@
-# Validation — 0.1.0 preview
+# Validation — 0.2.0 preview
 
-Validated locally on Windows using **Calibre 9.17** with an isolated configuration
-profile, and on **Ubuntu Python 3.12.3** using its existing Pillow/lxml dependencies.
-All **35 Python tests pass on both platforms**, including the private recovery
-test. The user's ordinary Calibre configuration and Obsidian vault were not
+Version 0.2.0 was validated on Windows on 2026-11-01 using **Calibre 9.17**
+with an isolated configuration profile. All **53 Python tests pass**, including
+the private recovery test, and all **23 JavaScript tests pass**. The earlier
+0.1.0 engine passed 35 tests on Ubuntu Python 3.12.3; the expanded 0.2.0 suite has
+not been rerun on Linux. The user's ordinary Calibre configuration and vault were not
 modified by testing.
 
 ## Automated evidence
@@ -21,6 +22,15 @@ modified by testing.
   managed-section conflicts, backup creation, concurrent preview edits,
   failed replacements, and a file replacement followed by a failed database
   update. Journal recovery makes the next identical sync unchanged.
+- Incremental merge checks middle insertion, hidden position labels, numbering,
+  chapter grouping, compact metadata, retained manual edits/deletions, simultaneous
+  source/user conflicts, and unchanged bytes/mtime/backup count on repeat exports.
+- Duplicate-note checks adoption without state, orphaned suffixes, historical
+  highlight IDs, unique passage ordering, ambiguous editions, conflicting edits,
+  duplicate-file changes after preview, and interrupted archival/retry without
+  repeated personal commentary. Archived originals retain their exact bytes.
+- The settings smoke check verifies author-folder and custom-filename preview
+  values as well as the new formatting controls. Rendered Qt settings were reviewed.
 - Mounted-storage and MTP doubles exercise read-only copying, uncached sidecar
   enumeration, corrupt-source isolation, repeated imports, and cancellation.
 - The original 23 JavaScript tests use public synthetic fixtures and pass.

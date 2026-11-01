@@ -162,11 +162,11 @@ class SyncTests(unittest.TestCase):
         self.assertEqual(self.engine.plan(), [])
         self.assertTrue(path.exists())
 
-    def test_user_edit_inside_markers_is_conflict(self):
+    def test_user_edit_inside_markers_is_preserved(self):
         path = self.initial()
         path.write_text(path.read_text(encoding='utf-8').replace('A synthetic passage.', 'User revision.'), encoding='utf-8')
         before = path.read_bytes()
-        self.assertEqual(self.engine.apply(self.engine.plan())['conflicts'], 1)
+        self.assertEqual(self.engine.apply(self.engine.plan())['unchanged'], 1)
         self.assertEqual(path.read_bytes(), before)
 
     def test_unrelated_file_collision_and_filename_safety(self):

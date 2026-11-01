@@ -13,7 +13,7 @@ def main():
     for name, expected in manifest['files'].items():
         if hashlib.sha256((vendor / name).read_bytes().replace(b'\r\n', b'\n')).hexdigest() != expected:
             raise ValueError('Vendored dependency changed: ' + name)
-    target = ROOT / 'dist/Kindle-Highlights-Sync-0.1.0.zip'
+    target = ROOT / 'dist/Kindle-Highlights-Sync-0.2.0.zip'
     target.parent.mkdir(exist_ok=True)
     sources = [(p, p.relative_to(ROOT / 'plugin').as_posix()) for p in sorted((ROOT / 'plugin').rglob('*'))
                if p.is_file() and p.suffix in ('.py', '.json', '.txt') and '__pycache__' not in p.parts]

@@ -5,13 +5,13 @@ managing persistent exclusions, and safely synchronizing Markdown to Obsidian.
 The original KCM browser app remains available below and through `index.html`.
 
 Requires **Calibre 9.17 or newer**. Windows runtime and Ubuntu engine tests pass;
-physical Kindle USB/MTP and Linux Calibre GUI validation remain outstanding. Version 0.1.0
+physical Kindle USB/MTP and Linux Calibre GUI validation remain outstanding. Version 0.2.0
 is a preview build, not a claim of completed hardware/platform certification.
 
 ## Install
 
 1. Build the ZIP with `calibre-debug tools/build_plugin.py`, or use the supplied
-   `dist/Kindle-Highlights-Sync-0.1.0.zip`.
+   `dist/Kindle-Highlights-Sync-0.2.0.zip`.
 2. In Calibre, open **Preferences → Plugins → Load plugin from file** and select
    that ZIP. Restart Calibre when prompted.
 3. Add **Sync Kindle Highlights** to the toolbar through **Preferences → Toolbars
@@ -32,8 +32,13 @@ is required. Dependencies are included or provided by Calibre.
 - Use **Manage highlights** to search, edit, exclude/restore, choose the correct
   Calibre edition, export one book, or save a cleaned clippings copy elsewhere.
 - Uncheck a book in the preview to skip it for that synchronization only.
-- Write Obsidian commentary **outside** the marked managed section. Editing
-  managed content creates a conflict and preserves the entire existing note.
+- New highlights merge into their book position, including middle insertions.
+  Existing passages and personal edits are retained. Changes to the same passage
+  in both Obsidian and the plugin produce a conflict for review.
+- Settings include filename presets such as `{author} - {title}`, author folders,
+  compact metadata, chapter grouping, and an example destination path.
+- Confirmed duplicate book notes merge into one note. Original duplicate files
+  are archived under `.kindle-highlights-backups/merged` after a successful merge.
 - Backups are stored under the destination’s `.kindle-highlights-backups` folder.
   Missing or excluded books never delete existing notes.
 - YAML properties are created initially and then treated as user-owned. Managed
@@ -53,7 +58,7 @@ $env:CALIBRE_CONFIG_DIRECTORY = Join-Path (Get-Location) '.calibre-test-profile'
 calibre-debug tools/run_tests.py
 node --test tests.js
 calibre-debug tools/build_plugin.py
-calibre-customize -a dist/Kindle-Highlights-Sync-0.1.0.zip
+calibre-customize -a dist/Kindle-Highlights-Sync-0.2.0.zip
 $env:QT_QPA_PLATFORM = 'offscreen'
 calibre-debug tools/smoke_calibre.py
 ```

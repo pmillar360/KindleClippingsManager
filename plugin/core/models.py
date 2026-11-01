@@ -102,6 +102,7 @@ class SyncDestination:
     vault: str
     folder: str = 'Books/Highlights'
     filename: str = '{title}'
+    author_folders: bool = False
 
 
 @dataclass

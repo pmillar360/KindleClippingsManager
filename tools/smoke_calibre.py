@@ -50,10 +50,17 @@ def main():
         plugin = find_plugin('Kindle Highlights Sync')
         widget = plugin.config_widget()
         assert isinstance(widget, SettingsWidget)
-        widget.resize(650, 650)
+        widget.resize(720, 850)
+        widget.controls['filename'].setText('{author} - {title}')
+        widget.controls['author_folders'].setChecked(True)
+        assert widget.path_preview.toPlainText() == 'Books/Highlights/Example Author/Example Author - Example Book.md'
+        assert 'compact' in widget.values() and 'group_chapters' in widget.values()
         widget.show()
         app.processEvents()
         widget.grab().save(str(output / 'settings.png'))
+        widget.resize(520, 740)
+        app.processEvents()
+        widget.grab().save(str(output / 'settings-narrow.png'))
         widget.close()
         state = root / 'state.sqlite'
         store = Store(state)

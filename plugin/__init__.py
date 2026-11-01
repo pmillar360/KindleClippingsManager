@@ -9,7 +9,7 @@ class KindleHighlightsSync(InterfaceActionBase):
     name = 'Kindle Highlights Sync'
     description = 'Import Kindle annotations and safely synchronize an Obsidian vault'
     author = 'Kindle Highlights Sync contributors'
-    version = (0, 1, 0)
+    version = (0, 2, 0)
     minimum_calibre_version = (9, 17, 0)
     supported_platforms = ['windows', 'linux']
     actual_plugin = 'calibre_plugins.kindle_highlights_sync.action:KindleHighlightsAction'

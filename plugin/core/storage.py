@@ -7,6 +7,7 @@ from datetime import datetime
 from uuid import uuid4
 
 from .models import Book, Highlight, decode, encode, now, text_key
+from .matching import Matcher
 
 MIGRATIONS = [
     '''CREATE TABLE books(id TEXT PRIMARY KEY, data TEXT NOT NULL);
@@ -101,6 +102,14 @@ class Store:
             self._save_book(target, source_id)
 
     def _save_book(self, book, source_id):
+        if not book.id.startswith('calibre-'):
+            # Reconcile copied KFX/clippings identities with an existing book.
+            # Matcher rejects conflicting identifiers and ambiguous editions.
+            others = [b for b in self.books() if b.id != book.id]
+            target, warning = Matcher(others).match(book)
+            if target.id != book.id and not warning:
+                book = replace(book, id=target.id, calibre_id=target.calibre_id, library_id=target.library_id,
+                               identifiers=target.identifiers | book.identifiers)
         alias = self.db.execute('SELECT book_id FROM book_aliases WHERE alias=?', (source_id,)).fetchone()
         old_id = alias[0] if alias else source_id
         # Once matched, a temporary missing library must not demote canonical metadata.
@@ -115,6 +124,7 @@ class Store:
                 self.db.execute('INSERT OR IGNORE INTO exclusions VALUES(?,?)', ('book', book.id))
             # Preserve existing note path/ownership during later library matching.
             self.db.execute('UPDATE OR IGNORE sync_state SET book_id=? WHERE book_id=?', (book.id, old_id))
+            self.db.execute('DELETE FROM sync_state WHERE book_id=?', (old_id,))
             self.db.execute('UPDATE book_aliases SET book_id=? WHERE book_id=?', (book.id, old_id))
             self.db.execute('DELETE FROM books WHERE id=?', (old_id,))
         self.db.execute('INSERT OR REPLACE INTO book_aliases VALUES(?,?)', (source_id, book.id))
